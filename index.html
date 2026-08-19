@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Toroidal Scrabble</title>
+    <link rel="stylesheet" href="styles.css?v=19" />
+  </head>
+  <body data-mode="day">
+    <!-- deep-space backdrop -->
+    <canvas id="starfield" aria-hidden="true"></canvas>
+    <!-- the 3D donut: a body-level layer BEHIND the UI panels -->
+    <div id="board3d" class="board3d"></div>
+
+    <!-- draggable light sources -->
+    <div id="sun" class="celestial sun" role="button" tabindex="0"
+         title="Sun — tap for daylight, drag to move the light">☀</div>
+    <div id="moon" class="celestial moon" role="button" tabindex="0"
+         title="Moon — tap for night, drag to spotlight part of the board">☾</div>
+
+    <header class="site-header">
+      <h1>Toroidal&nbsp;Scrabble</h1>
+      <p class="tagline">
+        Two boards fused into a donut adrift in space — words wrap off every
+        edge, the bag holds 200 tiles, and you steer the light with the sun &amp; moon.
+      </p>
+    </header>
+
+    <main class="layout">
+      <!-- Left column: controls & rack -->
+      <section class="sidebar">
+        <div class="panel">
+          <div id="scoreboard" class="scoreboard"></div>
+          <div id="bagInfo" class="bag-info"></div>
+          <div id="turnTimer" class="turn-timer"></div>
+        </div>
+
+        <div class="panel">
+          <div class="rack-head">
+            <span id="rackOwner">rack</span>
+            <button id="btnShuffle" class="mini" title="Shuffle rack">⇄ shuffle</button>
+          </div>
+          <div id="rack" class="rack"></div>
+
+          <div class="we-row">
+            <input id="wordEntry" type="text" placeholder="type a word…" autocomplete="off"
+              spellcheck="false" maxlength="15" />
+            <div class="we-dir" role="group" aria-label="direction">
+              <label><input type="radio" name="wedir" value="across" checked /> Across →</label>
+              <label><input type="radio" name="wedir" value="down" /> Down ↓</label>
+            </div>
+          </div>
+          <p class="mode-hint we-hint">Type a word, pick a direction, then click/tap the
+            starting square — it's laid from your rack (blanks fill gaps). Then Submit.</p>
+
+          <div class="controls">
+            <button id="btnSubmit" class="primary">Submit word</button>
+            <button id="btnRecall">Recall / cancel</button>
+            <button id="btnChallenge">Challenge last</button>
+            <button id="btnExchange">Exchange</button>
+            <button id="btnPass">Pass</button>
+            <button id="btnNew" class="ghost">New game</button>
+          </div>
+        </div>
+
+        <div id="message" class="message info">Loading…</div>
+
+        <div class="panel options">
+          <label class="opt-row">
+            <input type="checkbox" id="optZeroShort" />
+            <span><b>Elevated play</b> — every 2- &amp; 3-letter word is fair game, but they
+              score <b>0</b> (rewards real words, raises the level)</span>
+          </label>
+          <label class="opt-row players-row">
+            <span>Board shape:</span>
+            <select id="shapeSel">
+              <option value="torus">Torus (donut)</option>
+              <option value="mobius">Möbius strip</option>
+            </select>
+          </label>
+          <label class="opt-row">
+            <input type="checkbox" id="optVsAI" />
+            <span>Play vs <b>computer</b> (Player 2)</span>
+          </label>
+          <label class="opt-row players-row" id="aiDiffRow">
+            <span>Computer difficulty:</span>
+            <input type="range" id="aiDiff" min="0" max="100" value="70" title="left = casual, right = plays to win" />
+          </label>
+          <label class="opt-row players-row">
+            <span><input type="checkbox" id="optTimer" /> Turn timer</span>
+            <select id="timerSecs">
+              <option value="30">30s</option>
+              <option value="60" selected>60s</option>
+              <option value="120">2 min</option>
+              <option value="300">5 min</option>
+            </select>
+          </label>
+          <button id="btnScreensaver" class="mini wide">▶ Screensaver — two computers play</button>
+          <button id="btnWordList" class="mini wide">📖 List all 2- &amp; 3-letter words</button>
+          <p class="mode-hint">☀ / ☾ float in the sky — <b>tap</b> one to switch daylight/night,
+            <b>drag</b> it across to shine light on part of the board. Rack tiles <b>drag to reorder</b>.</p>
+        </div>
+
+        <div class="panel online">
+          <div class="online-head">Play against a friend</div>
+          <div id="netStatus" class="online-status">Local pass-and-play (same device)</div>
+          <div class="online-actions">
+            <button id="btnHost" class="mini">Host game</button>
+            <button id="btnJoin" class="mini">Join game</button>
+          </div>
+          <div id="netCode" class="net-code hidden"></div>
+          <div id="netJoinRow" class="net-join hidden">
+            <input id="joinCode" type="text" placeholder="ROOM CODE" autocomplete="off" maxlength="10" />
+            <button id="btnJoinGo" class="mini">Connect</button>
+          </div>
+          <p class="mode-hint">Host, share the room code, and your friend taps
+            <b>Join</b> — you play on separate devices. Each of you sees only your own rack.</p>
+        </div>
+
+        <details class="panel rules">
+          <summary>How this differs from Scrabble</summary>
+          <ul>
+            <li><b>Toroidal board.</b> 15×30 (two boards stacked). Top edge wraps
+              to bottom, left edge wraps to right — words continue across edges.</li>
+            <li><b>Two centres.</b> Two ★ start squares; the opening move covers one.</li>
+            <li><b>Doubled bag.</b> 200 tiles instead of 100.</li>
+            <li><b>Play:</b> tap a rack tile, then a square. Tap a placed tile to
+              recall it. Blanks ask which letter they represent.</li>
+            <li><b>Legend:</b>
+              <span class="chip prem-TW">TW</span>
+              <span class="chip prem-DW">DW</span>
+              <span class="chip prem-TL">TL</span>
+              <span class="chip prem-DL">DL</span>
+              <span class="chip prem-ST">★</span>
+            </li>
+          </ul>
+        </details>
+      </section>
+
+      <!-- Right column: the board -->
+      <section class="board-wrap">
+        <div class="board-stage" aria-hidden="true"></div>
+        <p class="board-hint" id="boardHint">Drag to tumble freely · scroll to zoom · click a square to place a tile</p>
+        <div class="roll-controls">
+          <button id="btnMove" class="mini" title="drag to reposition the donut instead of rotating">✥ Move</button>
+          <button id="btnRecenter" class="mini" title="recenter and reset zoom">⊙ Recenter</button>
+          <span class="seam-label">· Roll:</span>
+          <button id="rollCCW" class="mini sq" title="roll the surface one way" aria-label="roll one way">⟲</button>
+          <button id="rollCW" class="mini sq" title="roll the surface the other way" aria-label="roll the other way">⟳</button>
+        </div>
+        <div id="board3dError" class="msg-inline hidden"></div>
+
+        <details id="flatView" class="flat-view">
+          <summary>Flat view (2D) — roll the seam to see how the edges meet</summary>
+          <div id="seamControls" class="seam-controls">
+            <span class="seam-label">Shift seam</span>
+            <button class="mini sq" data-dr="-2" data-dc="0" title="shift up" aria-label="shift up">▲</button>
+            <button class="mini sq" data-dr="2" data-dc="0" title="shift down" aria-label="shift down">▼</button>
+            <button class="mini sq" data-dr="0" data-dc="-2" title="shift left" aria-label="shift left">◀</button>
+            <button class="mini sq" data-dr="0" data-dc="2" title="shift right" aria-label="shift right">▶</button>
+            <button class="mini" data-dr="15" data-dc="7" title="jump to where all four corners meet">⤢ corners</button>
+          </div>
+          <div class="board-frame">
+            <div id="board" class="board"></div>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <!-- 2- & 3-letter word reference -->
+    <div id="wordModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Short word list">
+      <div class="modal-card">
+        <div class="modal-head">
+          <h2>Legal 2- &amp; 3-letter words</h2>
+          <button id="btnCloseWords" class="mini" aria-label="Close">✕</button>
+        </div>
+        <input id="wordFilter" type="text" placeholder="filter… (e.g. type “qi” or “z”)" autocomplete="off" />
+        <div class="modal-body">
+          <h3>Two-letter <span class="count" id="c2"></span></h3>
+          <div id="list2" class="wordchips"></div>
+          <h3>Three-letter <span class="count" id="c3"></span></h3>
+          <div id="list3" class="wordchips"></div>
+        </div>
+        <p class="modal-foot">These upgrade your play a lot — so with <b>elevated play</b> on,
+          they're all fair to play but score 0.</p>
+      </div>
+    </div>
+
+    <!-- blank (?) tile letter picker -->
+    <div id="blankModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Choose the blank's letter">
+      <div class="modal-card blank-card">
+        <div class="modal-head">
+          <h2>Blank tile — pick its letter</h2>
+          <button id="btnCloseBlank" class="mini" aria-label="Cancel">✕</button>
+        </div>
+        <div id="blankGrid" class="blank-grid"></div>
+      </div>
+    </div>
+
+    <!-- endgame overlay (winner / loser ASCII) -->
+    <div id="endModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Game over">
+      <div class="modal-card end-card">
+        <div class="modal-head"><h2 id="endTitle">Game over</h2></div>
+        <div id="endBody" class="end-body"></div>
+        <div class="end-actions"><button id="btnEndNew" class="primary">New game</button></div>
+      </div>
+    </div>
+
+    <!-- generic confirmation -->
+    <div id="confirmModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card confirm-card">
+        <div class="modal-head"><h2 id="confirmTitle">Confirm</h2></div>
+        <p id="confirmMsg" class="confirm-msg"></p>
+        <div class="end-actions confirm-actions">
+          <button id="confirmYes" class="primary">Yes</button>
+          <button id="confirmNo" class="mini">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- screensaver control bar (visible only in screensaver mode) -->
+    <div id="screensaverBar" class="ss-bar">
+      <span id="ssScore" class="ss-score"></span>
+      <label class="ss-speed">Speed
+        <input type="range" id="ssSpeed" min="200" max="3200" value="1400" title="left = fast, right = slow" />
+      </label>
+      <button id="btnExitSS" class="mini">✕ Exit</button>
+    </div>
+
+    <script src="js/data.js?v=19"></script>
+    <script src="js/dictionary.js"></script>
+    <script src="js/engine.js?v=19"></script>
+    <script src="js/ai.js?v=19"></script>
+    <script src="js/board3d.js?v=19"></script>
+    <script src="js/app.js?v=19"></script>
+    <script src="js/vendor/peerjs.min.js"></script>
+    <script src="js/net.js?v=19"></script>
+    <script src="js/sky.js?v=19"></script>
+  </body>
+</html>
