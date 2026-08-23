@@ -30,6 +30,8 @@ const Board3D = (function () {
   let tubeRoll = 0;
   let tileFont = '"Cascadia Mono", "Cascadia Code", Consolas, "Segoe UI Mono", ui-monospace, "DejaVu Sans Mono", "Roboto Mono", Menlo, monospace'; // customizable tile lettering (default: monospace)
   function setFont(f) { if (f) { tileFont = f; if (inited) render(); } }
+  let curDpr = 1;          // device-pixel ratio last used (for capture crops)
+  let spinSave = null;     // saved view state while capturing a spin GIF
   let shape = 'torus', cullBack = true;
   let inited = false, dragging = false, hoverCell = null;
   let panX = 0, panY = 0, panMode = false; // "Move" mode drags the donut around
@@ -131,6 +133,7 @@ const Board3D = (function () {
     cssW = Math.max(200, rect.width);
     cssH = Math.max(200, rect.height);
     const dpr = Math.min(window.devicePixelRatio || 1, 1.25); // cap for fill speed
+    curDpr = dpr;
     canvas.width = Math.round(cssW * dpr);
     canvas.height = Math.round(cssH * dpr);
     canvas.style.width = cssW + 'px';
@@ -435,5 +438,34 @@ const Board3D = (function () {
   function _pickAt(x, y) { return pickCell(x, y); }
   function _renderNow() { render(); return lastQuads.length; }
 
-  return { init, ready, redraw, resize, setLight, rollTube, setShape, setPanMode, recenter, setFont, _pickAt, _renderNow };
+  /* ---- spin capture (for the shareable GIF) ---- */
+  // Temporarily reset zoom/pan so the whole donut is framed, keeping the user's
+  // current tilt (M) as the base; then spin about the vertical axis per frame.
+  function beginSpin() {
+    spinSave = { M: M, zoom: zoom, panX: panX, panY: panY };
+    zoom = 1; panX = 0; panY = 0; baseScale = baseFit;
+  }
+  function spinTo(frac) {
+    if (!spinSave) return;
+    M = mul(rotY(frac * TAU), spinSave.M);
+    render(); // synchronous
+  }
+  function endSpin() {
+    if (!spinSave) return;
+    M = spinSave.M; zoom = spinSave.zoom; panX = spinSave.panX; panY = spinSave.panY;
+    baseScale = baseFit * zoom;
+    spinSave = null;
+    render();
+  }
+  // A square (in the canvas's device pixels) that encloses the framed donut.
+  function getViewBox() {
+    const half = 3.4 * baseFit;
+    let sx = (cx - half) * curDpr, sy = (cy - half) * curDpr, size = 2 * half * curDpr;
+    if (sx < 0) sx = 0; if (sy < 0) sy = 0;
+    if (sx + size > canvas.width) size = canvas.width - sx;
+    if (sy + size > canvas.height) size = Math.min(size, canvas.height - sy);
+    return { sx, sy, size };
+  }
+
+  return { init, ready, redraw, resize, setLight, rollTube, setShape, setPanMode, recenter, setFont, beginSpin, spinTo, endSpin, getViewBox, _pickAt, _renderNow };
 })();

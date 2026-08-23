@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=30" />
+    <link rel="stylesheet" href="styles.css?v=31" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -93,6 +93,13 @@
             </span>
           </div>
           <p class="mode-hint" id="boardHint">Drag to tumble · pinch or scroll to zoom (two fingers to pan) · tap a square to place a tile.</p>
+          <div class="roll-controls">
+            <button id="btnShareBoard" class="mini" title="copy a shareable link to this exact board">🔗 Share board</button>
+            <button id="btnGif" class="mini" title="make an animated GIF of the spinning board">🎞 GIF</button>
+          </div>
+          <div id="shareBox" class="net-code hidden">
+            <input type="text" readonly aria-label="shareable board link" onclick="this.select()" />
+          </div>
         </div>
 
         <div class="panel options">
@@ -267,6 +274,19 @@
       </div>
     </div>
 
+    <!-- spinning-board GIF preview -->
+    <div id="gifModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Spinning board GIF">
+      <div class="modal-card gif-card">
+        <div class="modal-head">
+          <h2>Spinning board <span id="gifInfo" class="count"></span></h2>
+          <button id="btnCloseGif" class="mini" aria-label="Close">✕</button>
+        </div>
+        <img id="gifImg" alt="spinning toroidal board" class="gif-img" />
+        <p class="modal-foot">Long-press (mobile) or right-click the image to save it — or
+          <a id="gifDownload" download="toroidal-scrabble.gif" href="#">download the GIF</a>.</p>
+      </div>
+    </div>
+
     <!-- screensaver control bar (visible only in screensaver mode) -->
     <div id="screensaverBar" class="ss-bar">
       <span id="ssScore" class="ss-score"></span>
@@ -276,14 +296,15 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=30"></script>
-    <script src="js/dictionary.js?v=30"></script>
-    <script src="js/engine.js?v=30"></script>
-    <script src="js/ai.js?v=30"></script>
-    <script src="js/board3d.js?v=30"></script>
-    <script src="js/app.js?v=30"></script>
+    <script src="js/data.js?v=31"></script>
+    <script src="js/dictionary.js?v=31"></script>
+    <script src="js/engine.js?v=31"></script>
+    <script src="js/ai.js?v=31"></script>
+    <script src="js/board3d.js?v=31"></script>
+    <script src="js/gif.js?v=31"></script>
+    <script src="js/app.js?v=31"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=30"></script>
-    <script src="js/sky.js?v=30"></script>
+    <script src="js/net.js?v=31"></script>
+    <script src="js/sky.js?v=31"></script>
   </body>
 </html>

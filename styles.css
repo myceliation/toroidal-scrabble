@@ -560,6 +560,10 @@ body.not-my-turn .board { filter: brightness(0.92) saturate(0.9); }
 
 /* blank-tile picker */
 .blank-card { width: min(420px, 100%); }
+.gif-card { width: min(360px, 100%); }
+.gif-img { max-width: 100%; display: block; margin: 10px auto; border-radius: 10px; background: #0a1330; }
+#shareBox input { width: 100%; font-size: 11px; padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--panel-brd); background: rgba(255,255,255,0.06); color: var(--ink); }
 .blank-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 16px; }
 .blank-key {
   padding: 12px 0; font: inherit; font-weight: 700; font-size: 17px; cursor: pointer;

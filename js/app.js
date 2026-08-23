@@ -98,6 +98,7 @@ function packRack(i) {
 
 /* --------------------------- initial dealing --------------------------- */
 function newGame() {
+  sharedView = false; // starting a real game exits any shared-board view
   state.bag = buildBag();
   state.board = emptyBoard();
   state.pending.clear();
@@ -156,10 +157,11 @@ function renderAll() {
 
 /* ------------------------------ autosave ------------------------------- */
 const SAVE_KEY = 'toroidal-scrabble-save-v1';
+let sharedView = false; // true while viewing a shared board (read-only)
 
 function saveGame() {
-  // Don't persist online or screensaver (ephemeral AI-vs-AI) games.
-  if (state.online.active || state.screensaver.active || !state.board) return;
+  // Don't persist online, screensaver, or a read-only shared-board view.
+  if (state.online.active || state.screensaver.active || sharedView || !state.board) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       shape: Topo.shape,
@@ -1705,6 +1707,142 @@ document.getElementById('btnPass').addEventListener('click', passTurn);
 document.getElementById('btnExchange').addEventListener('click', toggleExchange);
 document.getElementById('btnNew').addEventListener('click', onNewGameClicked);
 
+/* ---------------------- shareable board code + viewer ------------------- */
+function b64urlEncode(s) {
+  return btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlDecode(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  return decodeURIComponent(escape(atob(s)));
+}
+// Board -> compact string: '.'+run for empties, UPPER for tiles, lower for blanks.
+function encodeGrid() {
+  let out = '', run = 0;
+  const flush = () => { if (run) { out += '.' + run; run = 0; } };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = state.board[r][c];
+    if (!t) run++;
+    else { flush(); out += t.blank ? t.letter.toLowerCase() : t.letter.toUpperCase(); }
+  }
+  flush();
+  return out;
+}
+function decodeGrid(g) {
+  const board = emptyBoard();
+  let idx = 0, i = 0;
+  while (i < g.length && idx < ROWS * COLS) {
+    const ch = g[i];
+    if (ch === '.') {
+      i++; let num = '';
+      while (i < g.length && g[i] >= '0' && g[i] <= '9') { num += g[i]; i++; }
+      idx += parseInt(num || '1', 10);
+    } else {
+      const r = Math.floor(idx / COLS), c = idx % COLS;
+      board[r][c] = { letter: ch.toUpperCase(), blank: ch >= 'a' && ch <= 'z' };
+      idx++; i++;
+    }
+  }
+  return board;
+}
+function encodeBoard() {
+  return b64urlEncode(JSON.stringify({
+    v: 1, s: Topo.shape,
+    p: state.players.map((p) => [String(p.name).slice(0, 20), p.score | 0]),
+    g: encodeGrid(),
+  }));
+}
+function shareBoard() {
+  try {
+    const url = location.origin + location.pathname + '?board=' + encodeBoard();
+    const box = document.getElementById('shareBox');
+    if (box) {
+      box.classList.remove('hidden');
+      const inp = box.querySelector('input');
+      if (inp) { inp.value = url; inp.focus(); inp.select(); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        () => setMessage('🔗 Board link copied to clipboard!', 'success'),
+        () => setMessage('🔗 Board link ready — copy it from the box below.', 'info')
+      );
+    } else setMessage('🔗 Board link ready — copy it from the box below.', 'info');
+  } catch (e) { setMessage('Could not create a board link.', 'error'); }
+}
+function loadSharedBoard(code) {
+  try {
+    const payload = JSON.parse(b64urlDecode(code));
+    if (!payload || payload.v !== 1 || !payload.g) return false;
+    Topo.shape = payload.s === 'mobius' ? 'mobius' : 'torus';
+    const sel = document.getElementById('shapeSel'); if (sel) sel.value = Topo.shape;
+    if (typeof Board3D !== 'undefined' && Board3D.setShape) Board3D.setShape(Topo.shape);
+    state.players = (payload.p && payload.p.length ? payload.p : [['Player 1', 0], ['Player 2', 0]])
+      .map((e) => ({ name: String(e[0]), score: e[1] | 0, rack: [] }));
+    state.board = decodeGrid(payload.g);
+    state.pending.clear(); state.placedFromRack.clear(); state.selected = null;
+    state.firstMove = false; state.over = true; // read-only view: no play
+    sharedView = true;
+    renderAll();
+    setMessage('👁 Viewing a shared board (read-only). Drag to rotate it; press New game to play your own.', 'info');
+    return true;
+  } catch (e) { return false; }
+}
+
+/* ----------------------- spinning-board GIF ---------------------------- */
+let gifUrl = null;
+function makeGif() {
+  if (typeof Board3D === 'undefined' || !Board3D.ready()) { setMessage('The 3D board isn’t ready yet.', 'info'); return; }
+  if (typeof GifEncoder === 'undefined') { setMessage('GIF encoder failed to load.', 'error'); return; }
+  const cv = document.querySelector('#board3d canvas');
+  if (!cv) return;
+  setMessage('🎞 Rendering a spinning GIF…', 'info');
+  const N = 20, out = 240, delayCs = 6;
+  const night = document.body.getAttribute('data-mode') === 'night';
+  setTimeout(() => {
+    try {
+      Board3D.beginSpin();
+      const vb = Board3D.getViewBox();
+      const tmp = document.createElement('canvas'); tmp.width = out; tmp.height = out;
+      const tctx = tmp.getContext('2d');
+      const frames = [];
+      for (let k = 0; k < N; k++) {
+        Board3D.spinTo(k / N);
+        tctx.fillStyle = night ? '#05060f' : '#0a1330';
+        tctx.fillRect(0, 0, out, out);
+        tctx.drawImage(cv, vb.sx, vb.sy, vb.size, vb.size, 0, 0, out, out);
+        const idx = new Uint8Array(out * out);
+        GifEncoder.quantize(tctx.getImageData(0, 0, out, out).data, idx);
+        frames.push(idx);
+      }
+      Board3D.endSpin();
+      const bytes = GifEncoder.encode(frames, out, out, delayCs);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'image/gif' }));
+      showGifModal(url, (bytes.length / 1024) | 0);
+      setMessage('🎞 GIF ready! Long-press (mobile) or right-click to save — or use Download.', 'success');
+    } catch (e) {
+      try { Board3D.endSpin(); } catch (_) {}
+      setMessage('GIF failed: ' + e.message, 'error');
+    }
+  }, 60);
+}
+function showGifModal(url, kb) {
+  if (gifUrl) URL.revokeObjectURL(gifUrl);
+  gifUrl = url;
+  const img = document.getElementById('gifImg'); if (img) img.src = url;
+  const dl = document.getElementById('gifDownload'); if (dl) dl.href = url;
+  const info = document.getElementById('gifInfo'); if (info) info.textContent = kb ? '(' + kb + ' KB)' : '';
+  const modal = document.getElementById('gifModal'); if (modal) modal.classList.remove('hidden');
+}
+function closeGif() { const m = document.getElementById('gifModal'); if (m) m.classList.add('hidden'); }
+
+const btnShareBoard = document.getElementById('btnShareBoard');
+if (btnShareBoard) btnShareBoard.addEventListener('click', shareBoard);
+const btnGif = document.getElementById('btnGif');
+if (btnGif) btnGif.addEventListener('click', makeGif);
+const btnCloseGif = document.getElementById('btnCloseGif');
+if (btnCloseGif) btnCloseGif.addEventListener('click', closeGif);
+const gifModalEl = document.getElementById('gifModal');
+if (gifModalEl) gifModalEl.addEventListener('click', (e) => { if (e.target.id === 'gifModal') closeGif(); });
+
 // Launch in the 3D donut, with a collapsible flat view alongside it.
 init3D();
 const flatView = document.getElementById('flatView');
@@ -1721,6 +1859,11 @@ if (savedGame && savedGame.players && savedGame.board) {
   restoreGame(savedGame);
   renderAll();
 }
+// A shared-board link (?board=…) opens read-only over the current game.
+try {
+  const boardParam = new URLSearchParams(location.search).get('board');
+  if (boardParam) loadSharedBoard(boardParam);
+} catch (_) {}
 loadDictionary();
 setTimeout(fitBoard, 80);
 window.addEventListener('resize', () => {
