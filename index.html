@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=20" />
+    <link rel="stylesheet" href="styles.css?v=21" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -65,6 +65,17 @@
 
         <div id="message" class="message info">Loading…</div>
 
+        <div class="panel donut-controls">
+          <div class="roll-controls">
+            <button id="btnMove" class="mini" title="drag to reposition the donut instead of rotating">✥ Move</button>
+            <button id="btnRecenter" class="mini" title="recenter and reset zoom">⊙ Recenter</button>
+            <span class="seam-label">Roll:</span>
+            <button id="rollCCW" class="mini sq" title="roll the surface one way" aria-label="roll one way">⟲</button>
+            <button id="rollCW" class="mini sq" title="roll the surface the other way" aria-label="roll the other way">⟳</button>
+          </div>
+          <p class="mode-hint" id="boardHint">Drag the donut to tumble · scroll to zoom · tap a square to place a tile.</p>
+        </div>
+
         <div class="panel options">
           <label class="opt-row">
             <input type="checkbox" id="optZeroShort" />
@@ -76,6 +87,33 @@
             <select id="shapeSel">
               <option value="torus">Torus (donut)</option>
               <option value="mobius">Möbius strip</option>
+            </select>
+          </label>
+          <label class="opt-row players-row">
+            <span>Players:</span>
+            <select id="playerCount">
+              <option value="2" selected>2 players</option>
+              <option value="3">3 players</option>
+              <option value="4">4 players</option>
+            </select>
+          </label>
+          <label class="opt-row players-row">
+            <span>Bag size:</span>
+            <select id="bagSizeSel">
+              <option value="auto" selected>Auto (by shape)</option>
+              <option value="1">1× — 100 tiles</option>
+              <option value="2">2× — 200 tiles</option>
+              <option value="3">3× — 300 tiles</option>
+            </select>
+          </label>
+          <label class="opt-row players-row">
+            <span>Rack size:</span>
+            <select id="rackSizeSel">
+              <option value="5">5 tiles</option>
+              <option value="6">6 tiles</option>
+              <option value="7" selected>7 tiles</option>
+              <option value="8">8 tiles</option>
+              <option value="9">9 tiles</option>
             </select>
           </label>
           <label class="opt-row">
@@ -140,14 +178,6 @@
       <!-- Right column: the board -->
       <section class="board-wrap">
         <div class="board-stage" aria-hidden="true"></div>
-        <p class="board-hint" id="boardHint">Drag to tumble freely · scroll to zoom · click a square to place a tile</p>
-        <div class="roll-controls">
-          <button id="btnMove" class="mini" title="drag to reposition the donut instead of rotating">✥ Move</button>
-          <button id="btnRecenter" class="mini" title="recenter and reset zoom">⊙ Recenter</button>
-          <span class="seam-label">· Roll:</span>
-          <button id="rollCCW" class="mini sq" title="roll the surface one way" aria-label="roll one way">⟲</button>
-          <button id="rollCW" class="mini sq" title="roll the surface the other way" aria-label="roll the other way">⟳</button>
-        </div>
         <div id="board3dError" class="msg-inline hidden"></div>
 
         <details id="flatView" class="flat-view">
@@ -227,14 +257,14 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=20"></script>
+    <script src="js/data.js?v=21"></script>
     <script src="js/dictionary.js"></script>
-    <script src="js/engine.js?v=20"></script>
-    <script src="js/ai.js?v=20"></script>
-    <script src="js/board3d.js?v=20"></script>
-    <script src="js/app.js?v=20"></script>
+    <script src="js/engine.js?v=21"></script>
+    <script src="js/ai.js?v=21"></script>
+    <script src="js/board3d.js?v=21"></script>
+    <script src="js/app.js?v=21"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=20"></script>
-    <script src="js/sky.js?v=20"></script>
+    <script src="js/net.js?v=21"></script>
+    <script src="js/sky.js?v=21"></script>
   </body>
 </html>

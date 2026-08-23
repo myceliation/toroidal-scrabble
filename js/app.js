@@ -32,6 +32,7 @@ const state = {
   timer: { enabled: false, seconds: 60, remaining: 0, id: null },
   pendingInvalid: false, // current pending tiles aren't in a legal line
 
+  bagOverride: null, // null = bag size auto by shape; else a fixed multiplier (1/2/3)
   viewOffset: { r: 0, c: 0 }, // flat-view seam shift (rolls the torus origin)
 };
 
@@ -52,7 +53,9 @@ function shuffleBag() {
 }
 
 // Torus = two boards → doubled bag (200). Möbius = one surface → standard 100.
+// A custom "bag size" option can override this with a fixed multiplier.
 function bagMultiplier() {
+  if (state.bagOverride) return state.bagOverride;
   return Topo.shape === 'mobius' ? 1 : TILE_MULTIPLIER;
 }
 function bagTotal() {
@@ -160,6 +163,8 @@ function saveGame() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       shape: Topo.shape,
+      rackSize: RACK_SIZE,
+      bagOverride: state.bagOverride,
       board: state.board,
       bag: state.bag,
       players: state.players.map((p) => ({ name: p.name, score: p.score, rack: p.rack })),
@@ -190,15 +195,21 @@ function restoreGame(snap) {
     if (sel) sel.value = snap.shape;
     if (typeof Board3D !== 'undefined' && Board3D.setShape) Board3D.setShape(snap.shape);
   }
+  // Restore custom settings so racks/bag rebuild to the saved sizes.
+  if (typeof snap.rackSize === 'number') {
+    RACK_SIZE = snap.rackSize;
+    const rs = document.getElementById('rackSizeSel');
+    if (rs) rs.value = String(snap.rackSize);
+  }
+  state.bagOverride = snap.bagOverride || null;
+  const bs = document.getElementById('bagSizeSel');
+  if (bs) bs.value = state.bagOverride ? String(state.bagOverride) : 'auto';
   state.board = snap.board;
   state.bag = snap.bag || [];
-  snap.players.forEach((p, i) => {
-    if (state.players[i]) {
-      state.players[i].name = p.name;
-      state.players[i].score = p.score;
-      state.players[i].rack = p.rack;
-    }
-  });
+  // Rebuild the players array to match the saved count (2–4 supported).
+  state.players = snap.players.map((p) => ({ name: p.name, score: p.score, rack: p.rack }));
+  const pc = document.getElementById('playerCount');
+  if (pc) pc.value = String(state.players.length);
   state.cur = snap.cur || 0;
   state.firstMove = !!snap.firstMove;
   state.scorelessStreak = snap.scorelessStreak || 0;
@@ -1396,6 +1407,18 @@ document.getElementById('confirmModal').addEventListener('click', (e) => {
   if (e.target.id === 'confirmModal') closeConfirm(false);
 });
 
+// Apply a "new game" setting (players / bag / rack). If tiles are already
+// played, confirm first (it restarts); on a fresh board, just apply.
+function applySetting(msg, apply, revert) {
+  if (state.online.active) {
+    setMessage('That setting is fixed during online games.', 'info');
+    if (revert) revert();
+    return;
+  }
+  if (state.firstMove && !state.over) { apply(); return; }
+  showConfirm('Restart the game?', msg + ' This starts a new game — continue?', apply, revert || (() => {}));
+}
+
 // Elevated play must hold for a whole game — toggling asks to restart.
 document.getElementById('optZeroShort').addEventListener('change', (e) => {
   const now = e.target.checked;
@@ -1430,7 +1453,31 @@ document.getElementById('btnEndNew').addEventListener('click', () => {
   onNewGameClicked();
 });
 const pcSel = document.getElementById('playerCount');
-if (pcSel) pcSel.addEventListener('change', () => setPlayerCount(+pcSel.value));
+if (pcSel) pcSel.addEventListener('change', () => {
+  const n = +pcSel.value, prev = state.players.length;
+  applySetting('Playing with ' + n + ' players.',
+    () => setPlayerCount(n),
+    () => { pcSel.value = String(prev); });
+});
+
+// Custom bag size (tile count) — auto (by shape) or a fixed 1×/2×/3×.
+const bagSel = document.getElementById('bagSizeSel');
+if (bagSel) bagSel.addEventListener('change', () => {
+  const v = bagSel.value;
+  const prevVal = state.bagOverride ? String(state.bagOverride) : 'auto';
+  applySetting('Changing the tile-bag size.',
+    () => { state.bagOverride = v === 'auto' ? null : +v; newGame(); },
+    () => { bagSel.value = prevVal; });
+});
+
+// Custom rack size (tiles per player).
+const rackSel = document.getElementById('rackSizeSel');
+if (rackSel) rackSel.addEventListener('change', () => {
+  const n = Math.max(3, Math.min(12, +rackSel.value)), prev = RACK_SIZE;
+  applySetting('Setting rack size to ' + n + ' tiles.',
+    () => { RACK_SIZE = n; newGame(); },
+    () => { rackSel.value = String(prev); });
+});
 
 const optVsAI = document.getElementById('optVsAI');
 if (optVsAI) {

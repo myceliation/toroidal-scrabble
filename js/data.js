@@ -15,7 +15,7 @@
  * row 29 is adjacent to row 0. Both edge pairs are glued. */
 const COLS = 15;
 const ROWS = 30;
-const RACK_SIZE = 7;
+let RACK_SIZE = 7; // mutable: customizable rack size (default 7)
 
 /* "Double the available letters" — two full standard bags. */
 const TILE_MULTIPLIER = 2;
