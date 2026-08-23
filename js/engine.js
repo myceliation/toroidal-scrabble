@@ -208,14 +208,17 @@ const Engine = {
       if (opts.zeroShortWords && w.cells.length <= 3) wordScore = 0;
 
       // Palindrome / reversible-word bonus (4+ letter words only), marked per
-      // word so the UI can flag them.
+      // word so the UI can flag them. The played word ITSELF must be a valid
+      // dictionary word — otherwise an invalid word (e.g. DEZAM) would wrongly
+      // earn the bonus just because its reverse (MAZED) happens to be valid.
+      // 2- and 3-letter words never earn it (length >= 4 gate).
       let bonus = 0;
       let kind = null;
-      if (w.cells.length >= 4) {
+      if (w.cells.length >= 4 && dict.has(w.text.toLowerCase())) {
         const up = w.text.toUpperCase();
         const rev = up.split('').reverse().join('');
-        if (up === rev) { bonus = 20; kind = 'palindrome'; } // reads the same both ways
-        else if (dict.has(rev.toLowerCase())) { bonus = 5; kind = 'reversible'; } // valid backwards too
+        if (up === rev) { bonus = 20; kind = 'palindrome'; } // valid word, reads the same both ways
+        else if (dict.has(rev.toLowerCase())) { bonus = 5; kind = 'reversible'; } // valid forwards AND backwards
       }
       wordBonus += bonus;
       total += wordScore;

@@ -187,6 +187,7 @@ body[data-mode='night'] {
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transition: transform 0.1s, box-shadow 0.1s;
+  touch-action: none; /* allow drag-to-reorder on touchscreens (no scroll hijack) */
 }
 .rtile:hover { transform: translateY(-3px); }
 .rtile.selected {
@@ -347,7 +348,6 @@ body .online-status, body .online-head, body .wchip, body .modal-foot, body .bag
      within its own area (touch-action:none), while the menu below scrolls
      normally. This removes the "drag anywhere rotates the donut" trap. */
   .site-header { display: none; }
-  #sun, #moon { display: none; } /* sun/moon hidden on mobile (ID wins over base .celestial) */
   #board3d {
     position: relative;
     inset: auto;
@@ -555,7 +555,8 @@ body.not-my-turn .board { filter: brightness(0.92) saturate(0.9); }
 .seam-controls { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .seam-label { color: var(--muted); font-size: 12px; margin-right: 2px; }
 .mini.sq { padding: 3px 8px; line-height: 1; font-size: 12px; }
-.roll-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px; }
+.roll-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px; flex-wrap: wrap; }
+.roll-only { display: inline-flex; align-items: center; gap: 6px; }
 
 /* blank-tile picker */
 .blank-card { width: min(420px, 100%); }

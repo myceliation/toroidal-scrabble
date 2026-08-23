@@ -48,6 +48,7 @@ const Board3D = (function () {
   function norm(v) { const m = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / m, v[1] / m, v[2] / m]; }
   function rotX(a) { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
   function rotY(a) { const c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
+  function rotZ(a) { const c = Math.cos(a), s = Math.sin(a); return [c, -s, 0, s, c, 0, 0, 0, 1]; }
   function mul(A, B) {
     const C = new Array(9);
     for (let r = 0; r < 3; r++)
@@ -68,11 +69,15 @@ const Board3D = (function () {
   }
   function cornersFor(i, j) {
     if (shape === 'mobius') {
+      // "Roll" a Möbius strip = advance the tiles along the loop; because of the
+      // half-twist, tiles travel from one face around to the other, so the
+      // inner/underside comes outward.
+      const roll = tubeRoll / TAU;
       return [
-        mobiusPoint(i / ROWS, j / COLS),
-        mobiusPoint((i + 1) / ROWS, j / COLS),
-        mobiusPoint((i + 1) / ROWS, (j + 1) / COLS),
-        mobiusPoint(i / ROWS, (j + 1) / COLS),
+        mobiusPoint(i / ROWS + roll, j / COLS),
+        mobiusPoint((i + 1) / ROWS + roll, j / COLS),
+        mobiusPoint((i + 1) / ROWS + roll, (j + 1) / COLS),
+        mobiusPoint(i / ROWS + roll, (j + 1) / COLS),
       ];
     }
     const u0 = (i / ROWS) * TAU, u1 = ((i + 1) / ROWS) * TAU;
@@ -281,11 +286,11 @@ const Board3D = (function () {
     // pan). One finger keeps the trackball rotate / tap-to-place behaviour.
     const pointers = new Map(); // pointerId -> {x,y}
     let downX = 0, downY = 0, lastX = 0, lastY = 0, moved = false;
-    let pinching = false, pinchDist = 0, pinchMidX = 0, pinchMidY = 0;
+    let pinching = false, pinchDist = 0, pinchMidX = 0, pinchMidY = 0, pinchAng = 0;
     const metrics = () => {
       const p = [...pointers.values()];
       const dx = p[0].x - p[1].x, dy = p[0].y - p[1].y;
-      return { dist: Math.hypot(dx, dy) || 1, mx: (p[0].x + p[1].x) / 2, my: (p[0].y + p[1].y) / 2 };
+      return { dist: Math.hypot(dx, dy) || 1, mx: (p[0].x + p[1].x) / 2, my: (p[0].y + p[1].y) / 2, ang: Math.atan2(dy, dx) };
     };
     canvas.addEventListener('pointerdown', (e) => {
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -296,19 +301,23 @@ const Board3D = (function () {
       canvas.style.cursor = 'grabbing';
       if (pointers.size === 2) {
         const m = metrics();
-        pinching = true; pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my;
+        pinching = true; pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my; pinchAng = m.ang;
         moved = true; dragging = false; // a two-finger gesture is never a tap
       }
     });
     canvas.addEventListener('pointermove', (e) => {
       if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      // Two fingers: pinch to zoom, and slide the midpoint to pan.
+      // Two fingers: pinch to zoom, slide the midpoint to pan, and twist
+      // (one finger up, one down) to roll/rotate the donut — like a photo app.
       if (pinching && pointers.size >= 2) {
         const m = metrics();
         setZoom(zoom * (m.dist / pinchDist));
         panX += m.mx - pinchMidX;
         panY += m.my - pinchMidY;
-        pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my;
+        let dA = m.ang - pinchAng;
+        if (dA > Math.PI) dA -= TAU; else if (dA < -Math.PI) dA += TAU;
+        M = mul(rotZ(dA), M);
+        pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my; pinchAng = m.ang;
         window.__donutDragging = true;
         markDirty();
         return;

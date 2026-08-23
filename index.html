@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=28" />
+    <link rel="stylesheet" href="styles.css?v=29" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -86,9 +86,11 @@
           <div class="roll-controls">
             <button id="btnMove" class="mini" title="drag to reposition the donut instead of rotating">✥ Move</button>
             <button id="btnRecenter" class="mini" title="recenter and reset zoom">⊙ Recenter</button>
-            <span class="seam-label">Roll:</span>
-            <button id="rollCCW" class="mini sq" title="roll the surface one way" aria-label="roll one way">⟲</button>
-            <button id="rollCW" class="mini sq" title="roll the surface the other way" aria-label="roll the other way">⟳</button>
+            <span class="roll-only">
+              <span class="seam-label">Roll:</span>
+              <button id="rollCCW" class="mini sq" title="roll the surface one way" aria-label="roll one way">⟲</button>
+              <button id="rollCW" class="mini sq" title="roll the surface the other way" aria-label="roll the other way">⟳</button>
+            </span>
           </div>
           <p class="mode-hint" id="boardHint">Drag to tumble · pinch or scroll to zoom (two fingers to pan) · tap a square to place a tile.</p>
         </div>
@@ -274,14 +276,14 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=28"></script>
-    <script src="js/dictionary.js?v=28"></script>
-    <script src="js/engine.js?v=28"></script>
-    <script src="js/ai.js?v=28"></script>
-    <script src="js/board3d.js?v=28"></script>
-    <script src="js/app.js?v=28"></script>
+    <script src="js/data.js?v=29"></script>
+    <script src="js/dictionary.js?v=29"></script>
+    <script src="js/engine.js?v=29"></script>
+    <script src="js/ai.js?v=29"></script>
+    <script src="js/board3d.js?v=29"></script>
+    <script src="js/app.js?v=29"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=28"></script>
-    <script src="js/sky.js?v=28"></script>
+    <script src="js/net.js?v=29"></script>
+    <script src="js/sky.js?v=29"></script>
   </body>
 </html>
