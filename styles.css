@@ -332,11 +332,12 @@ body[data-mode='night'] {
 /* draw the seam as a dashed line between rows 14 and 15 via row backgrounds */
 .cell[data-r="14"] { border-bottom: 2px dashed rgba(242,193,78,0.5); }
 
-/* customizable UI reading-text size (Compact / Normal / Large) */
+/* customizable UI reading-text size (Compact / Normal / Large).
+   body-scoped so these win over the base per-element font-size rules. */
 body.ui-sm { --ui-fs: 11.5px; }
 body.ui-lg { --ui-fs: 15.5px; }
-.mode-hint, .opt-row, #message, .rules li, .rules > summary,
-.online-status, .online-head, .wchip, .modal-foot, .bag-info, .board-hint {
+body .mode-hint, body .opt-row, body #message, body .rules li, body .rules > summary,
+body .online-status, body .online-head, body .wchip, body .modal-foot, body .bag-info, body .board-hint {
   font-size: var(--ui-fs);
 }
 
