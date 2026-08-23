@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=27" />
+    <link rel="stylesheet" href="styles.css?v=28" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -20,15 +20,30 @@
 
     <header class="site-header">
       <h1>Toroidal&nbsp;Scrabble</h1>
-      <p class="tagline">
-        Two boards fused into a donut adrift in space — words wrap off every
-        edge, the bag holds 200 tiles, and you steer the light with the sun &amp; moon.
-      </p>
     </header>
 
     <main class="layout">
       <!-- Left column: controls & rack -->
       <section class="sidebar">
+        <details class="panel rules">
+          <summary>How this differs from Scrabble</summary>
+          <ul>
+            <li><b>Toroidal board.</b> 15×30 (two boards stacked). Top edge wraps
+              to bottom, left edge wraps to right — words continue across edges.</li>
+            <li><b>Two centres.</b> Two ★ start squares; the opening move covers one.</li>
+            <li><b>Doubled bag.</b> 200 tiles instead of 100.</li>
+            <li><b>Play:</b> tap a rack tile, then a square. Tap a placed tile to
+              recall it. Blanks ask which letter they represent.</li>
+            <li><b>Legend:</b>
+              <span class="chip prem-TW">TW</span>
+              <span class="chip prem-DW">DW</span>
+              <span class="chip prem-TL">TL</span>
+              <span class="chip prem-DL">DL</span>
+              <span class="chip prem-ST">★</span>
+            </li>
+          </ul>
+        </details>
+
         <div class="panel">
           <div id="scoreboard" class="scoreboard"></div>
           <div id="bagInfo" class="bag-info"></div>
@@ -175,24 +190,6 @@
             <b>Join</b> — you play on separate devices. Each of you sees only your own rack.</p>
         </div>
 
-        <details class="panel rules">
-          <summary>How this differs from Scrabble</summary>
-          <ul>
-            <li><b>Toroidal board.</b> 15×30 (two boards stacked). Top edge wraps
-              to bottom, left edge wraps to right — words continue across edges.</li>
-            <li><b>Two centres.</b> Two ★ start squares; the opening move covers one.</li>
-            <li><b>Doubled bag.</b> 200 tiles instead of 100.</li>
-            <li><b>Play:</b> tap a rack tile, then a square. Tap a placed tile to
-              recall it. Blanks ask which letter they represent.</li>
-            <li><b>Legend:</b>
-              <span class="chip prem-TW">TW</span>
-              <span class="chip prem-DW">DW</span>
-              <span class="chip prem-TL">TL</span>
-              <span class="chip prem-DL">DL</span>
-              <span class="chip prem-ST">★</span>
-            </li>
-          </ul>
-        </details>
       </section>
 
       <!-- Right column: the board -->
@@ -277,14 +274,14 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=27"></script>
-    <script src="js/dictionary.js?v=27"></script>
-    <script src="js/engine.js?v=27"></script>
-    <script src="js/ai.js?v=27"></script>
-    <script src="js/board3d.js?v=27"></script>
-    <script src="js/app.js?v=27"></script>
+    <script src="js/data.js?v=28"></script>
+    <script src="js/dictionary.js?v=28"></script>
+    <script src="js/engine.js?v=28"></script>
+    <script src="js/ai.js?v=28"></script>
+    <script src="js/board3d.js?v=28"></script>
+    <script src="js/app.js?v=28"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=27"></script>
-    <script src="js/sky.js?v=27"></script>
+    <script src="js/net.js?v=28"></script>
+    <script src="js/sky.js?v=28"></script>
   </body>
 </html>

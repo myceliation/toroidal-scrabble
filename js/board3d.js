@@ -190,21 +190,6 @@ const Board3D = (function () {
     quads.sort((a, b) => a.depth - b.depth);
     lastQuads = quads;
     for (const q of quads) drawQuad(q);
-
-    // Orientation gizmo at the hovered square: which screen-direction "across"
-    // (increasing column) and "down" (increasing row) actually run — so words
-    // don't get placed backwards on the rotated surface.
-    if (hoverCell && !dragging) {
-      const bq = baseQuads[hoverCell.r * COLS + hoverCell.c];
-      if (bq) {
-        const P = bq.c.map((p) => project(rot(p)));
-        const cx0 = (P[0][0] + P[1][0] + P[2][0] + P[3][0]) / 4;
-        const cy0 = (P[0][1] + P[1][1] + P[2][1] + P[3][1]) / 4;
-        // c0->c3 is +column (across); c0->c1 is +row (down)
-        drawArrow(cx0, cy0, P[3][0] - P[0][0], P[3][1] - P[0][1], '#6ea8ff', 'across →');
-        drawArrow(cx0, cy0, P[1][0] - P[0][0], P[1][1] - P[0][1], '#ffcf4d', 'down ↓');
-      }
-    }
   }
 
   function drawQuad(q) {
@@ -257,34 +242,6 @@ const Board3D = (function () {
   }
 
   // Arrow from (x,y) toward (dx,dy), fixed length, with a small label.
-  function drawArrow(x, y, dx, dy, color, label) {
-    const len = Math.hypot(dx, dy) || 1;
-    const L = 46;
-    const ex = x + (dx / len) * L;
-    const ey = y + (dy / len) * L;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(ex, ey);
-    ctx.stroke();
-    const ang = Math.atan2(ey - y, ex - x);
-    ctx.beginPath();
-    ctx.moveTo(ex, ey);
-    ctx.lineTo(ex - 10 * Math.cos(ang - 0.4), ey - 10 * Math.sin(ang - 0.4));
-    ctx.lineTo(ex - 10 * Math.cos(ang + 0.4), ey - 10 * Math.sin(ang + 0.4));
-    ctx.closePath();
-    ctx.fill();
-    ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-    ctx.lineWidth = 3;
-    ctx.strokeText(label, ex + 5, ey);
-    ctx.fillText(label, ex + 5, ey);
-  }
-
   /* ------------------------------ picking ------------------------------ */
   function pointInQuad(px, py, s) {
     let inside = false;
