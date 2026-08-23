@@ -1514,7 +1514,7 @@ const TILE_FONTS = {
   serif: 'Georgia, "Times New Roman", serif',
   sans: 'system-ui, "Segoe UI", Arial, sans-serif',
   rounded: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
-  mono: '"Courier New", "Lucida Console", monospace',
+  mono: '"Cascadia Mono", "Cascadia Code", Consolas, "Segoe UI Mono", ui-monospace, "DejaVu Sans Mono", "Roboto Mono", Menlo, monospace',
   script: '"Comic Sans MS", "Segoe Print", "Bradley Hand", cursive',
 };
 function skillLabel(d) {
@@ -1523,7 +1523,7 @@ function skillLabel(d) {
 function savePrefs() {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
-      font: (document.getElementById('fontSel') || {}).value || 'serif',
+      font: (document.getElementById('fontSel') || {}).value || 'mono',
       textSize: (document.getElementById('textSizeSel') || {}).value || 'md',
       difficulty: state.ai.difficulty,
     }));
@@ -1531,7 +1531,7 @@ function savePrefs() {
 }
 function applyPrefs(p) {
   p = p || {};
-  const fk = TILE_FONTS[p.font] ? p.font : 'serif';
+  const fk = TILE_FONTS[p.font] ? p.font : 'mono'; // monospace is the default
   document.documentElement.style.setProperty('--tile-font', TILE_FONTS[fk]);
   if (typeof Board3D !== 'undefined' && Board3D.setFont) Board3D.setFont(TILE_FONTS[fk]);
   const fsel = document.getElementById('fontSel'); if (fsel) fsel.value = fk;

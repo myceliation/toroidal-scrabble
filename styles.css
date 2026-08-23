@@ -22,7 +22,7 @@
   --st: #f2c14e;
   --cell-empty: #16203f;
 
-  --tile-font: Georgia, "Times New Roman", serif; /* customizable tile lettering */
+  --tile-font: "Cascadia Mono", "Cascadia Code", Consolas, "Segoe UI Mono", ui-monospace, "DejaVu Sans Mono", "Roboto Mono", Menlo, monospace; /* customizable tile lettering (default: monospace) */
   --ui-fs: 13px; /* customizable UI reading-text size */
 }
 

@@ -28,7 +28,7 @@ const Board3D = (function () {
   let cssW = 300, cssH = 300, cx = 150, cy = 150, baseScale = 60, baseFit = 60, zoom = 1;
   let M = mul(rotY(0.2), rotX(-0.5)); // orientation matrix (initial tilt)
   let tubeRoll = 0;
-  let tileFont = 'Georgia, "Times New Roman", serif'; // customizable tile lettering
+  let tileFont = '"Cascadia Mono", "Cascadia Code", Consolas, "Segoe UI Mono", ui-monospace, "DejaVu Sans Mono", "Roboto Mono", Menlo, monospace'; // customizable tile lettering (default: monospace)
   function setFont(f) { if (f) { tileFont = f; if (inited) render(); } }
   let shape = 'torus', cullBack = true;
   let inited = false, dragging = false, hoverCell = null;
