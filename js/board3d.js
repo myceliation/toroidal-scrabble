@@ -323,7 +323,9 @@ const Board3D = (function () {
         return;
       }
       if (e.buttons) {
-        if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 4) moved = true;
+        // Touch fingers jitter more than a mouse — use a bigger tap tolerance so
+        // a tap still registers as a tap (and opens the blank picker etc).
+        if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > (e.pointerType === 'touch' ? 14 : 4)) moved = true;
         if (moved) {
           dragging = true;
           window.__donutDragging = true; // lets the starfield pause while dragging

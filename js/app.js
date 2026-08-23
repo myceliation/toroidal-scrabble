@@ -400,6 +400,34 @@ function shiftView(dr, dc) {
 
 // Lay a typed word onto the board starting at (r0,c0), taking tiles from the
 // current rack (blanks fill any letter). Existing tiles on the path must match.
+// Try to lay `word` starting at (r0,c0) in the given axis/sign, using existing
+// board tiles wherever they fall (they count for free) and rack tiles for the
+// gaps. Pure: returns {ok:true, placements} or {ok:false, error} — no mutation.
+function computeLay(r0, c0, axis, sign, word, rack) {
+  const avail = rack.map((t, i) => ({ t, i, used: false }));
+  const placements = [];
+  let cell = { r: r0, c: c0 };
+  for (let k = 0; k < word.length; k++) {
+    if (!cell) return { ok: false, error: 'edge' };
+    const r = cell.r, c = cell.c;
+    const letter = word[k];
+    const committed = state.board[r][c];
+    if (committed) {
+      if (committed.letter !== letter) return { ok: false, error: 'conflict' };
+      // existing board tile supplies this letter for free
+    } else {
+      let slot = avail.find((s) => !s.used && !s.t.blank && s.t.letter === letter);
+      let blank = false;
+      if (!slot) { slot = avail.find((s) => !s.used && s.t.blank); blank = true; }
+      if (!slot) return { ok: false, error: 'missing ' + letter };
+      slot.used = true;
+      placements.push({ r, c, letter, blank, rackIndex: slot.i });
+    }
+    cell = Topo.step(r, c, axis, sign);
+  }
+  return { ok: true, placements };
+}
+
 function layWordAt(r0, c0) {
   if (state.over) return false;
   if (state.online.active && !isMyTurn()) {
@@ -410,54 +438,54 @@ function layWordAt(r0, c0) {
   const word = ((input && input.value) || '').trim().toUpperCase().replace(/[^A-Z]/g, '');
   if (!word) return false;
   // Four directions: → right / ← left (horizontal), ↓ down / ↑ up (vertical).
-  // Left & up simply lay the typed letters "backwards" from the tapped square.
   const dir = (document.querySelector('input[name="wedir"]:checked') || {}).value || 'right';
   const axis = (dir === 'down' || dir === 'up') ? 'V' : 'H';
   const sign = (dir === 'left' || dir === 'up') ? -1 : 1;
 
   recallAll();
   const rack = state.players[rackOwnerIndex()].rack;
-  const avail = rack.map((t, i) => ({ t, i, used: false }));
-  const placements = [];
-  let cell = { r: r0, c: c0 };
-  for (let k = 0; k < word.length; k++) {
-    if (!cell) { // ran off a free boundary (e.g. a Möbius strip edge)
-      setMessage('“' + word + '” runs off the edge of the surface from there — try another square or direction.', 'error');
-      recallAll();
-      renderAll();
+  const committedAt = state.board[r0][c0];
+  let result = null;
+
+  if (committedAt) {
+    // Building THROUGH an existing tile: align the word so that tile is the
+    // matching letter (step back to each occurrence), and pick the first fit.
+    // This lets you reuse board letters instead of needing them in your rack.
+    const offsets = [];
+    for (let k = 0; k < word.length; k++) if (word[k] === committedAt.letter) offsets.push(k);
+    if (!offsets.length) {
+      setMessage('“' + committedAt.letter + '” is already on that square and isn’t a letter of “' + word + '”.', 'error');
       return false;
     }
-    const r = cell.r, c = cell.c;
-    const letter = word[k];
-    const committed = state.board[r][c];
-    if (committed) {
-      if (committed.letter !== letter) {
-        setMessage('“' + word + '” doesn’t fit the tiles already there (need ' + committed.letter + ' at that square).', 'error');
-        recallAll();
-        renderAll();
-        return false;
-      }
-      // existing tile is part of the word, not a new placement
-    } else {
-      let slot = avail.find((s) => !s.used && !s.t.blank && s.t.letter === letter);
-      let blank = false;
-      if (!slot) { slot = avail.find((s) => !s.used && s.t.blank); blank = true; }
-      if (!slot) {
-        setMessage('You don’t have the tiles for “' + word + '” (missing ' + letter + ').', 'error');
-        recallAll();
-        renderAll();
-        return false;
-      }
-      slot.used = true;
-      placements.push({ r, c, letter, blank, rackIndex: slot.i });
+    for (const k of offsets) {
+      let cell = { r: r0, c: c0 }, ok = true;
+      for (let b = 0; b < k; b++) { const p = Topo.step(cell.r, cell.c, axis, -sign); if (!p) { ok = false; break; } cell = p; }
+      if (!ok) continue;
+      const res = computeLay(cell.r, cell.c, axis, sign, word, rack);
+      if (res.ok) { result = res; break; }
     }
-    cell = Topo.step(r, c, axis, sign); // topology-aware next square (may be null at a boundary)
+    if (!result) {
+      setMessage('“' + word + '” doesn’t fit through that tile — check the spelling or direction.', 'error');
+      return false;
+    }
+  } else {
+    result = computeLay(r0, c0, axis, sign, word, rack);
+    if (!result.ok) {
+      const msg = result.error === 'conflict'
+        ? '“' + word + '” conflicts with tiles already on that line.'
+        : result.error === 'edge'
+          ? '“' + word + '” runs off the edge of the surface from there — try another square or direction.'
+          : 'You don’t have the tiles for “' + word + '” (' + result.error + '). Tiles already on the board count for free — tap an existing letter to build through it.';
+      setMessage(msg, 'error');
+      return false;
+    }
   }
-  if (placements.length === 0) {
+
+  if (result.placements.length === 0) {
     setMessage('“' + word + '” is already on the board there.', 'info');
     return false;
   }
-  for (const p of placements) {
+  for (const p of result.placements) {
     state.pending.set(keyOf(p.r, p.c), { letter: p.letter, blank: p.blank, rackIndex: p.rackIndex });
     state.placedFromRack.add(p.rackIndex);
   }
@@ -511,18 +539,21 @@ function cellAction(r, c) {
     renderAll();
     return;
   }
-  // Occupied by a committed tile — nothing to do.
-  if (state.board[r][c]) return;
-  // No rack tile selected: if a word is typed, lay it from here; else prompt.
+  // No rack tile selected: if a word is typed, lay it from here — this works on
+  // an empty square OR by building THROUGH an existing tile (tap the letter it
+  // shares). Existing board tiles count for free, so you don't need them in rack.
   if (state.selected === null) {
     const wi = document.getElementById('wordEntry');
     if (wi && wi.value.trim()) {
       layWordAt(r, c);
       return;
     }
+    if (state.board[r][c]) return; // occupied, nothing typed
     setMessage('Pick a tile from your rack, or type a word above and click a starting square.', 'info');
     return;
   }
+  // A rack tile is selected — can't drop it onto an occupied square.
+  if (state.board[r][c]) return;
 
   const tile = curPlayer().rack[state.selected];
   const rackIndex = state.selected;
