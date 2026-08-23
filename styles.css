@@ -21,6 +21,9 @@
   --dl: #7fc0e8;
   --st: #f2c14e;
   --cell-empty: #16203f;
+
+  --tile-font: Georgia, "Times New Roman", serif; /* customizable tile lettering */
+  --ui-fs: 13px; /* customizable UI reading-text size */
 }
 
 * { box-sizing: border-box; }
@@ -172,7 +175,7 @@ body[data-mode='night'] {
   background: linear-gradient(160deg, var(--tile-bg), var(--tile-bg2));
   color: var(--tile-ink);
   border-radius: 5px;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--tile-font, Georgia, "Times New Roman", serif);
   font-weight: 700;
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   user-select: none;
@@ -328,6 +331,14 @@ body[data-mode='night'] {
 
 /* draw the seam as a dashed line between rows 14 and 15 via row backgrounds */
 .cell[data-r="14"] { border-bottom: 2px dashed rgba(242,193,78,0.5); }
+
+/* customizable UI reading-text size (Compact / Normal / Large) */
+body.ui-sm { --ui-fs: 11.5px; }
+body.ui-lg { --ui-fs: 15.5px; }
+.mode-hint, .opt-row, #message, .rules li, .rules > summary,
+.online-status, .online-head, .wchip, .modal-foot, .bag-info, .board-hint {
+  font-size: var(--ui-fs);
+}
 
 @media (max-width: 760px) {
   :root { --cell: 22px; }

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=24" />
+    <link rel="stylesheet" href="styles.css?v=25" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -123,8 +123,8 @@
             <span>Play vs <b>computer</b> (Player 2)</span>
           </label>
           <label class="opt-row players-row" id="aiDiffRow">
-            <span>Computer difficulty:</span>
-            <input type="range" id="aiDiff" min="0" max="100" value="70" title="left = casual, right = plays to win" />
+            <span>Computer skill: <b id="aiDiffLabel">Normal</b></span>
+            <input type="range" id="aiDiff" min="0" max="100" value="55" title="left = casual, right = plays to win" />
           </label>
           <label class="opt-row players-row">
             <span><input type="checkbox" id="optTimer" /> Turn timer</span>
@@ -133,6 +133,24 @@
               <option value="60" selected>60s</option>
               <option value="120">2 min</option>
               <option value="300">5 min</option>
+            </select>
+          </label>
+          <label class="opt-row players-row">
+            <span>Tile font:</span>
+            <select id="fontSel">
+              <option value="serif" selected>Serif (classic)</option>
+              <option value="sans">Sans-serif</option>
+              <option value="rounded">Rounded</option>
+              <option value="mono">Typewriter</option>
+              <option value="script">Handwritten</option>
+            </select>
+          </label>
+          <label class="opt-row players-row">
+            <span>Text size:</span>
+            <select id="textSizeSel">
+              <option value="sm">Compact</option>
+              <option value="md" selected>Normal</option>
+              <option value="lg">Large</option>
             </select>
           </label>
           <button id="btnScreensaver" class="mini wide">▶ Screensaver — two computers play</button>
@@ -259,14 +277,14 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=24"></script>
-    <script src="js/dictionary.js?v=24"></script>
-    <script src="js/engine.js?v=24"></script>
-    <script src="js/ai.js?v=24"></script>
-    <script src="js/board3d.js?v=24"></script>
-    <script src="js/app.js?v=24"></script>
+    <script src="js/data.js?v=25"></script>
+    <script src="js/dictionary.js?v=25"></script>
+    <script src="js/engine.js?v=25"></script>
+    <script src="js/ai.js?v=25"></script>
+    <script src="js/board3d.js?v=25"></script>
+    <script src="js/app.js?v=25"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=24"></script>
-    <script src="js/sky.js?v=24"></script>
+    <script src="js/net.js?v=25"></script>
+    <script src="js/sky.js?v=25"></script>
   </body>
 </html>

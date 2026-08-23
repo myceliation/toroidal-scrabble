@@ -27,7 +27,7 @@ const state = {
   // Online (P2P) play. When active, this client controls only `myIndex`;
   // the host (myIndex 0) is authoritative over the shared game state.
   online: { active: false, role: null, myIndex: 0, connected: false },
-  ai: { enabled: false, difficulty: 0.7 }, // Player 2 = computer when enabled
+  ai: { enabled: false, difficulty: 0.55 }, // Player 2 = computer when enabled
   screensaver: { active: false, delay: 1400 }, // two AIs auto-play
   timer: { enabled: false, seconds: 60, remaining: 0, id: null },
   pendingInvalid: false, // current pending tiles aren't in a legal line
@@ -1508,10 +1508,69 @@ if (optVsAI) {
     afterTurn(); // in case it's already the computer's turn
   });
 }
-const aiDiff = document.getElementById('aiDiff');
-if (aiDiff) {
-  aiDiff.addEventListener('input', () => { state.ai.difficulty = +aiDiff.value / 100; });
+// ---- appearance & AI-skill preferences (persisted across sessions) ----
+const PREFS_KEY = 'toroidal-scrabble-prefs-v1';
+const TILE_FONTS = {
+  serif: 'Georgia, "Times New Roman", serif',
+  sans: 'system-ui, "Segoe UI", Arial, sans-serif',
+  rounded: '"Trebuchet MS", "Segoe UI", Verdana, sans-serif',
+  mono: '"Courier New", "Lucida Console", monospace',
+  script: '"Comic Sans MS", "Segoe Print", "Bradley Hand", cursive',
+};
+function skillLabel(d) {
+  return d < 0.2 ? 'Casual' : d < 0.4 ? 'Easy' : d < 0.65 ? 'Normal' : d < 0.85 ? 'Hard' : 'Max';
 }
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      font: (document.getElementById('fontSel') || {}).value || 'serif',
+      textSize: (document.getElementById('textSizeSel') || {}).value || 'md',
+      difficulty: state.ai.difficulty,
+    }));
+  } catch (_) {}
+}
+function applyPrefs(p) {
+  p = p || {};
+  const fk = TILE_FONTS[p.font] ? p.font : 'serif';
+  document.documentElement.style.setProperty('--tile-font', TILE_FONTS[fk]);
+  if (typeof Board3D !== 'undefined' && Board3D.setFont) Board3D.setFont(TILE_FONTS[fk]);
+  const fsel = document.getElementById('fontSel'); if (fsel) fsel.value = fk;
+
+  const sz = ['sm', 'md', 'lg'].includes(p.textSize) ? p.textSize : 'md';
+  document.body.classList.remove('ui-sm', 'ui-lg');
+  if (sz === 'sm') document.body.classList.add('ui-sm');
+  else if (sz === 'lg') document.body.classList.add('ui-lg');
+  const tsel = document.getElementById('textSizeSel'); if (tsel) tsel.value = sz;
+
+  if (typeof p.difficulty === 'number') {
+    state.ai.difficulty = p.difficulty;
+    const s = document.getElementById('aiDiff'); if (s) s.value = String(Math.round(p.difficulty * 100));
+  }
+  const lbl = document.getElementById('aiDiffLabel'); if (lbl) lbl.textContent = skillLabel(state.ai.difficulty);
+}
+
+const aiDiff = document.getElementById('aiDiff');
+if (aiDiff) aiDiff.addEventListener('input', () => {
+  state.ai.difficulty = +aiDiff.value / 100;
+  const lbl = document.getElementById('aiDiffLabel'); if (lbl) lbl.textContent = skillLabel(state.ai.difficulty);
+  savePrefs();
+});
+const fontSel = document.getElementById('fontSel');
+if (fontSel) fontSel.addEventListener('change', () => {
+  const f = TILE_FONTS[fontSel.value] || TILE_FONTS.serif;
+  document.documentElement.style.setProperty('--tile-font', f);
+  if (typeof Board3D !== 'undefined' && Board3D.setFont) Board3D.setFont(f);
+  savePrefs();
+});
+const textSizeSel = document.getElementById('textSizeSel');
+if (textSizeSel) textSizeSel.addEventListener('change', () => {
+  document.body.classList.remove('ui-sm', 'ui-lg');
+  if (textSizeSel.value === 'sm') document.body.classList.add('ui-sm');
+  else if (textSizeSel.value === 'lg') document.body.classList.add('ui-lg');
+  savePrefs();
+});
+// apply saved preferences at startup
+applyPrefs((function () { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (_) { return {}; } })());
 
 // turn timer
 const optTimer = document.getElementById('optTimer');

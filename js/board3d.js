@@ -28,6 +28,8 @@ const Board3D = (function () {
   let cssW = 300, cssH = 300, cx = 150, cy = 150, baseScale = 60, baseFit = 60, zoom = 1;
   let M = mul(rotY(0.2), rotX(-0.5)); // orientation matrix (initial tilt)
   let tubeRoll = 0;
+  let tileFont = 'Georgia, "Times New Roman", serif'; // customizable tile lettering
+  function setFont(f) { if (f) { tileFont = f; if (inited) render(); } }
   let shape = 'torus', cullBack = true;
   let inited = false, dragging = false, hoverCell = null;
   let panX = 0, panY = 0, panMode = false; // "Move" mode drags the donut around
@@ -241,11 +243,11 @@ const Board3D = (function () {
     ctx.textBaseline = 'middle';
     if (tile) {
       ctx.fillStyle = '#3a2b12';
-      ctx.font = 'bold ' + Math.max(8, size * 0.6) + 'px Georgia, serif';
+      ctx.font = 'bold ' + Math.max(8, size * 0.6) + 'px ' + tileFont;
       ctx.fillText(tile.letter === '_' ? '' : tile.letter, mx - size * 0.08, my - size * 0.05);
       // small point value, like a real tile
       const val = tile.blank ? 0 : LETTER_VALUES[tile.letter] || 0;
-      ctx.font = 'bold ' + Math.max(6, size * 0.3) + 'px Georgia, serif';
+      ctx.font = 'bold ' + Math.max(6, size * 0.3) + 'px ' + tileFont;
       ctx.fillText(String(val), mx + size * 0.5, my + size * 0.5);
     } else if (prem) {
       ctx.fillStyle = prem === 'ST' ? '#5a3d00' : 'rgba(255,255,255,0.92)';
@@ -465,5 +467,5 @@ const Board3D = (function () {
   function _pickAt(x, y) { return pickCell(x, y); }
   function _renderNow() { render(); return lastQuads.length; }
 
-  return { init, ready, redraw, resize, setLight, rollTube, setShape, setPanMode, recenter, _pickAt, _renderNow };
+  return { init, ready, redraw, resize, setLight, rollTube, setShape, setPanMode, recenter, setFont, _pickAt, _renderNow };
 })();
