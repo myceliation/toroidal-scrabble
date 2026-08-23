@@ -313,16 +313,47 @@ const Board3D = (function () {
   }
 
   /* ------------------------------ events ------------------------------- */
+  function setZoom(z) {
+    zoom = Math.max(0.4, Math.min(6, z));
+    baseScale = baseFit * zoom;
+  }
   function bindEvents() {
+    // Track every active pointer so two fingers = pinch-to-zoom (+ two-finger
+    // pan). One finger keeps the trackball rotate / tap-to-place behaviour.
+    const pointers = new Map(); // pointerId -> {x,y}
     let downX = 0, downY = 0, lastX = 0, lastY = 0, moved = false;
+    let pinching = false, pinchDist = 0, pinchMidX = 0, pinchMidY = 0;
+    const metrics = () => {
+      const p = [...pointers.values()];
+      const dx = p[0].x - p[1].x, dy = p[0].y - p[1].y;
+      return { dist: Math.hypot(dx, dy) || 1, mx: (p[0].x + p[1].x) / 2, my: (p[0].y + p[1].y) / 2 };
+    };
     canvas.addEventListener('pointerdown', (e) => {
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       downX = lastX = e.clientX;
       downY = lastY = e.clientY;
       moved = false;
       canvas.style.cursor = 'grabbing';
+      if (pointers.size === 2) {
+        const m = metrics();
+        pinching = true; pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my;
+        moved = true; dragging = false; // a two-finger gesture is never a tap
+      }
     });
     canvas.addEventListener('pointermove', (e) => {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // Two fingers: pinch to zoom, and slide the midpoint to pan.
+      if (pinching && pointers.size >= 2) {
+        const m = metrics();
+        setZoom(zoom * (m.dist / pinchDist));
+        panX += m.mx - pinchMidX;
+        panY += m.my - pinchMidY;
+        pinchDist = m.dist; pinchMidX = m.mx; pinchMidY = m.my;
+        window.__donutDragging = true;
+        markDirty();
+        return;
+      }
       if (e.buttons) {
         if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 4) moved = true;
         if (moved) {
@@ -350,7 +381,20 @@ const Board3D = (function () {
     });
     function up(e) {
       try { if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      pointers.delete(e.pointerId);
       canvas.style.cursor = 'grab';
+      // Coming out of a pinch: re-anchor the remaining finger so rotation
+      // doesn't jump, and never treat the lift as a tap.
+      if (pinching) {
+        if (pointers.size < 2) pinching = false;
+        if (pointers.size === 1) {
+          const p = [...pointers.values()][0];
+          downX = lastX = p.x; downY = lastY = p.y; moved = true;
+        }
+        window.__donutDragging = pointers.size > 0;
+        if (dragging) { dragging = false; render(); }
+        return;
+      }
       window.__donutDragging = false;
       const wasClick = !moved;
       if (dragging) { dragging = false; render(); }
@@ -360,15 +404,19 @@ const Board3D = (function () {
       }
     }
     canvas.addEventListener('pointerup', up);
-    canvas.addEventListener('pointercancel', () => { window.__donutDragging = false; if (dragging) { dragging = false; render(); } });
+    canvas.addEventListener('pointercancel', (e) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinching = false;
+      window.__donutDragging = pointers.size > 0;
+      if (dragging) { dragging = false; render(); }
+    });
     canvas.addEventListener('pointerleave', () => { if (hoverCell) { hoverCell = null; render(); } });
     canvas.addEventListener('wheel', (e) => {
       // Over a menu/panel, let the page scroll instead of zooming. Panels are
       // pointer-events:none so hit-testing ignores them — use their rects.
       if (overMenu(e.clientX, e.clientY)) return; // no preventDefault -> page scroll
       e.preventDefault();
-      zoom = Math.max(0.4, Math.min(4, zoom * (e.deltaY > 0 ? 0.9 : 1.1)));
-      baseScale = baseFit * zoom;
+      setZoom(zoom * (e.deltaY > 0 ? 0.9 : 1.1));
       markDirty();
     }, { passive: false });
   }

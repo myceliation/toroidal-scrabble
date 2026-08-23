@@ -335,7 +335,7 @@ body[data-mode='night'] {
      within its own area (touch-action:none), while the menu below scrolls
      normally. This removes the "drag anywhere rotates the donut" trap. */
   .site-header { display: none; }
-  .celestial { display: none; } /* sun/moon hidden on mobile to avoid touch conflicts */
+  #sun, #moon { display: none; } /* sun/moon hidden on mobile (ID wins over base .celestial) */
   #board3d {
     position: relative;
     inset: auto;
