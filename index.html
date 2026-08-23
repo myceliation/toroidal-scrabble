@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Toroidal Scrabble</title>
-    <link rel="stylesheet" href="styles.css?v=22" />
+    <link rel="stylesheet" href="styles.css?v=23" />
   </head>
   <body data-mode="day">
     <!-- deep-space backdrop -->
@@ -45,9 +45,11 @@
           <div class="we-row">
             <input id="wordEntry" type="text" placeholder="type a word…" autocomplete="off"
               spellcheck="false" maxlength="15" />
-            <div class="we-dir" role="group" aria-label="direction">
-              <label><input type="radio" name="wedir" value="across" checked /> Across →</label>
-              <label><input type="radio" name="wedir" value="down" /> Down ↓</label>
+            <div class="we-dir" role="group" aria-label="direction — the word flows this way from the square you tap">
+              <label title="rightward"><input type="radio" name="wedir" value="right" checked /> → </label>
+              <label title="leftward (write it backwards)"><input type="radio" name="wedir" value="left" /> ← </label>
+              <label title="downward"><input type="radio" name="wedir" value="down" /> ↓ </label>
+              <label title="upward (write it backwards)"><input type="radio" name="wedir" value="up" /> ↑ </label>
             </div>
           </div>
           <p class="mode-hint we-hint">Type a word, pick a direction, then click/tap the
@@ -257,14 +259,14 @@
       <button id="btnExitSS" class="mini">✕ Exit</button>
     </div>
 
-    <script src="js/data.js?v=22"></script>
+    <script src="js/data.js?v=23"></script>
     <script src="js/dictionary.js"></script>
-    <script src="js/engine.js?v=22"></script>
-    <script src="js/ai.js?v=22"></script>
-    <script src="js/board3d.js?v=22"></script>
-    <script src="js/app.js?v=22"></script>
+    <script src="js/engine.js?v=23"></script>
+    <script src="js/ai.js?v=23"></script>
+    <script src="js/board3d.js?v=23"></script>
+    <script src="js/app.js?v=23"></script>
     <script src="js/vendor/peerjs.min.js"></script>
-    <script src="js/net.js?v=22"></script>
-    <script src="js/sky.js?v=22"></script>
+    <script src="js/net.js?v=23"></script>
+    <script src="js/sky.js?v=23"></script>
   </body>
 </html>

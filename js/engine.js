@@ -184,6 +184,7 @@ const Engine = {
     // Score every formed word. Premiums apply only under tiles placed this
     // turn; a new tile's letter/word premium counts in each word it joins.
     let total = 0;
+    let wordBonus = 0;
     const scored = [];
     for (const w of built) {
       let wordScore = 0;
@@ -205,18 +206,20 @@ const Engine = {
       // them is a big skill boost, so this keeps them useful for opening the
       // board without inflating the score.
       if (opts.zeroShortWords && w.cells.length <= 3) wordScore = 0;
-      total += wordScore;
-      scored.push({ text: w.text, score: wordScore });
-    }
 
-    // Palindrome / reversible-word bonuses (4+ letter words only).
-    let wordBonus = 0;
-    for (const w of built) {
-      if (w.cells.length < 4) continue;
-      const up = w.text.toUpperCase();
-      const rev = up.split('').reverse().join('');
-      if (up === rev) wordBonus += 20; // palindrome, same both ways
-      else if (dict.has(rev.toLowerCase())) wordBonus += 5; // valid word both directions
+      // Palindrome / reversible-word bonus (4+ letter words only), marked per
+      // word so the UI can flag them.
+      let bonus = 0;
+      let kind = null;
+      if (w.cells.length >= 4) {
+        const up = w.text.toUpperCase();
+        const rev = up.split('').reverse().join('');
+        if (up === rev) { bonus = 20; kind = 'palindrome'; } // reads the same both ways
+        else if (dict.has(rev.toLowerCase())) { bonus = 5; kind = 'reversible'; } // valid backwards too
+      }
+      wordBonus += bonus;
+      total += wordScore;
+      scored.push({ text: w.text, score: wordScore, bonus, kind });
     }
     total += wordBonus;
 

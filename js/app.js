@@ -409,17 +409,25 @@ function layWordAt(r0, c0) {
   const input = document.getElementById('wordEntry');
   const word = ((input && input.value) || '').trim().toUpperCase().replace(/[^A-Z]/g, '');
   if (!word) return false;
-  const dir = (document.querySelector('input[name="wedir"]:checked') || {}).value || 'across';
-  const dr = dir === 'down' ? 1 : 0;
-  const dc = dir === 'across' ? 1 : 0;
+  // Four directions: → right / ← left (horizontal), ↓ down / ↑ up (vertical).
+  // Left & up simply lay the typed letters "backwards" from the tapped square.
+  const dir = (document.querySelector('input[name="wedir"]:checked') || {}).value || 'right';
+  const axis = (dir === 'down' || dir === 'up') ? 'V' : 'H';
+  const sign = (dir === 'left' || dir === 'up') ? -1 : 1;
 
   recallAll();
   const rack = state.players[rackOwnerIndex()].rack;
   const avail = rack.map((t, i) => ({ t, i, used: false }));
   const placements = [];
+  let cell = { r: r0, c: c0 };
   for (let k = 0; k < word.length; k++) {
-    const r = (r0 + dr * k) % ROWS;
-    const c = (c0 + dc * k) % COLS;
+    if (!cell) { // ran off a free boundary (e.g. a Möbius strip edge)
+      setMessage('“' + word + '” runs off the edge of the surface from there — try another square or direction.', 'error');
+      recallAll();
+      renderAll();
+      return false;
+    }
+    const r = cell.r, c = cell.c;
     const letter = word[k];
     const committed = state.board[r][c];
     if (committed) {
@@ -429,19 +437,21 @@ function layWordAt(r0, c0) {
         renderAll();
         return false;
       }
-      continue; // existing tile is part of the word, not a new placement
+      // existing tile is part of the word, not a new placement
+    } else {
+      let slot = avail.find((s) => !s.used && !s.t.blank && s.t.letter === letter);
+      let blank = false;
+      if (!slot) { slot = avail.find((s) => !s.used && s.t.blank); blank = true; }
+      if (!slot) {
+        setMessage('You don’t have the tiles for “' + word + '” (missing ' + letter + ').', 'error');
+        recallAll();
+        renderAll();
+        return false;
+      }
+      slot.used = true;
+      placements.push({ r, c, letter, blank, rackIndex: slot.i });
     }
-    let slot = avail.find((s) => !s.used && !s.t.blank && s.t.letter === letter);
-    let blank = false;
-    if (!slot) { slot = avail.find((s) => !s.used && s.t.blank); blank = true; }
-    if (!slot) {
-      setMessage('You don’t have the tiles for “' + word + '” (missing ' + letter + ').', 'error');
-      recallAll();
-      renderAll();
-      return false;
-    }
-    slot.used = true;
-    placements.push({ r, c, letter, blank, rackIndex: slot.i });
+    cell = Topo.step(r, c, axis, sign); // topology-aware next square (may be null at a boundary)
   }
   if (placements.length === 0) {
     setMessage('“' + word + '” is already on the board there.', 'info');
@@ -646,6 +656,19 @@ function nextPlayer() {
   state.selected = null;
 }
 
+// Human-readable summary of a scored move, flagging palindromes/reversibles.
+function moveSummary(name, result) {
+  return name + ': ' +
+    result.words.map((w) => {
+      let s = wordLabel(w.text) + ' (' + w.score + ')';
+      if (w.kind === 'palindrome') s += ' ✨palindrome +20';
+      else if (w.kind === 'reversible') s += ' ↔ reversible +5';
+      return s;
+    }).join(', ') +
+    (result.bingo ? '  +50 BINGO!' : '') +
+    '  →  +' + result.total;
+}
+
 function submitMove() {
   if (state.over) return;
   if (isAiTurn() && !aiActing) return;
@@ -726,12 +749,8 @@ function submitMove() {
   const wi = document.getElementById('wordEntry');
   if (wi) wi.value = '';
 
-  const summary =
-    result.words.map((w) => wordLabel(w.text) + ' (' + w.score + ')').join(', ') +
-    (result.bingo ? '  +50 BINGO!' : '') +
-    (result.wordBonus ? '  +' + result.wordBonus + ' (reversible/palindrome)!' : '') +
-    '  →  +' + result.total;
-  setMessage(player.name + ': ' + summary, 'success');
+  const summary = moveSummary(player.name, result);
+  setMessage(summary, 'success');
 
   // End condition: a player empties their rack with an empty bag.
   if (player.rack.length === 0 && state.bag.length === 0) {
@@ -740,7 +759,7 @@ function submitMove() {
     nextPlayer();
   }
   renderAll();
-  if (state.online.active) broadcastState(player.name + ': ' + summary);
+  if (state.online.active) broadcastState(summary);
   afterTurn();
 }
 
@@ -1174,12 +1193,7 @@ function hostHandleGuestMove(msg) {
       player: 1, cells, words: result.words.map((w) => w.text),
       score: result.total, playedTiles, drawn, wasFirstMove: wasFirst,
     };
-    const summary =
-      'Player 2: ' +
-      result.words.map((w) => wordLabel(w.text) + ' (' + w.score + ')').join(', ') +
-      (result.bingo ? '  +50 BINGO!' : '') +
-    (result.wordBonus ? '  +' + result.wordBonus + ' (reversible/palindrome)!' : '') +
-      '  →  +' + result.total;
+    const summary = moveSummary(state.players[1].name || 'Player 2', result);
     setMessage(summary, 'success');
     if (state.players[1].rack.length === 0 && state.bag.length === 0) endGame(1);
     else state.cur = 0;
