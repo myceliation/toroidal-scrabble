@@ -155,9 +155,11 @@ function renderAll() {
 const SAVE_KEY = 'toroidal-scrabble-save-v1';
 
 function saveGame() {
-  if (state.online.active || !state.board) return; // don't persist online games
+  // Don't persist online or screensaver (ephemeral AI-vs-AI) games.
+  if (state.online.active || state.screensaver.active || !state.board) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
+      shape: Topo.shape,
       board: state.board,
       bag: state.bag,
       players: state.players.map((p) => ({ name: p.name, score: p.score, rack: p.rack })),
@@ -181,6 +183,13 @@ function loadSave() {
 }
 
 function restoreGame(snap) {
+  // Restore the board topology first (torus vs Möbius) so the engine + 3D match.
+  if (snap.shape && snap.shape !== Topo.shape) {
+    Topo.shape = snap.shape;
+    const sel = document.getElementById('shapeSel');
+    if (sel) sel.value = snap.shape;
+    if (typeof Board3D !== 'undefined' && Board3D.setShape) Board3D.setShape(snap.shape);
+  }
   state.board = snap.board;
   state.bag = snap.bag || [];
   snap.players.forEach((p, i) => {
